@@ -1,1 +1,82 @@
-https://github.com/uuty778/tghao-monitor/new/main?filename=monitor.py&value=import%20os%2C%20requests%2C%20json%2C%20time%0Afrom%20datetime%20import%20datetime%0A%0AAPPID%20%3D%20os.environ.get(%27TGHAO_APPID%27%2C%20%27%27)%0ACONTACTS%20%3D%20os.environ.get(%27TGHAO_CONTACTS%27%2C%20%27%27).split(%27%2C%27)%0APUSHPLUS%20%3D%20os.environ.get(%27PUSHPLUS_TOKEN%27%2C%20%27%27)%0ASTATE_FILE%20%3D%20%27state.json%27%0A%0Adef%20load_seen()%3A%0A%20%20%20%20try%3A%0A%20%20%20%20%20%20%20%20return%20set(json.load(open(STATE_FILE)).get(%27ids%27%2C%20%5B%5D))%0A%20%20%20%20except%3A%0A%20%20%20%20%20%20%20%20return%20set()%0A%0Adef%20save_seen(ids)%3A%0A%20%20%20%20json.dump(%7B%27ids%27%3A%20list(ids)%7D%2C%20open(STATE_FILE%2C%20%27w%27))%0A%0Adef%20query(contact)%3A%0A%20%20%20%20try%3A%0A%20%20%20%20%20%20%20%20r%20%3D%20requests.get(%27https%3A//tghao.com/%27%2C%20params%3D%7B%27c%27%3A%27api%27%2C%27act%27%3A%27query_order%27%2C%27appid%27%3AAPPID%2C%27contact%27%3Acontact%7D%2C%20timeout%3D15)%0A%20%20%20%20%20%20%20%20print(f%22%5B%7Bdatetime.now()%7D%5D%20%7Bcontact%7D%20%7Br.status_code%7D%20%7Br.text%5B%3A300%5D%7D%22)%0A%20%20%20%20%20%20%20%20j%20%3D%20r.json()%0A%20%20%20%20%20%20%20%20return%20j.get(%27data%27%2C%20%5B%5D)%20if%20isinstance(j%2C%20dict)%20else%20%5B%5D%0A%20%20%20%20except%20Exception%20as%20e%3A%0A%20%20%20%20%20%20%20%20print(f%22query%20error%3A%20%7Be%7D%22)%0A%20%20%20%20%20%20%20%20return%20%5B%5D%0A%0Adef%20push(title%2C%20content)%3A%0A%20%20%20%20if%20not%20PUSHPLUS%3A%0A%20%20%20%20%20%20%20%20return%0A%20%20%20%20try%3A%0A%20%20%20%20%20%20%20%20requests.post(%27https%3A//www.pushplus.plus/send%27%2C%20json%3D%7B%27token%27%3APUSHPLUS%2C%27title%27%3Atitle%2C%27content%27%3Acontent%2C%27template%27%3A%27txt%27%7D%2C%20timeout%3D10)%0A%20%20%20%20except%3A%0A%20%20%20%20%20%20%20%20pass%0A%0Aseen%20%3D%20load_seen()%0Awhile%20True%3A%0A%20%20%20%20msgs%20%3D%20%5B%5D%0A%20%20%20%20for%20c%20in%20CONTACTS%3A%0A%20%20%20%20%20%20%20%20for%20o%20in%20query(c)%3A%0A%20%20%20%20%20%20%20%20%20%20%20%20oid%20%3D%20str(o.get(%27order_id%27)%20or%20o.get(%27order_sn%27)%20or%20o.get(%27id%27)%20or%20%27%27)%0A%20%20%20%20%20%20%20%20%20%20%20%20if%20oid%20and%20oid%20not%20in%20seen%3A%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20seen.add(oid)%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20msg%20%3D%20f%22联系方式%3A%20%7Bc%7D%5Cn商品%3A%20%7Bo.get(%27goods_name%27%2Co.get(%27product%27%2C%27%27))%7D%5Cn金额%3A%20%C2%A5%7Bo.get(%27amount%27%2Co.get(%27price%27%2C%27%27))%7D%5Cn时间%3A%20%7Bo.get(%27time%27%2Cdatetime.now().strftime(%27%25Y-%25m-%25d%20%25H%3A%25M%27))%7D%22%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20msgs.append(msg)%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20print(f%22NEW%3A%20%7Bmsg%7D%22)%0A%20%20%20%20save_seen(seen)%0A%20%20%20%20if%20msgs%3A%0A%20%20%20%20%20%20%20%20push(%27TGHAO%20%E6%96%B0%E8%AE%A2%E5%8D%95%27%2C%20%27%5Cn---%5Cn%27.join(msgs))%0A%20%20%20%20time.sleep(30)
+import os
+import requests
+import json
+import time
+from datetime import datetime
+
+APPID = os.environ.get('TGHAO_APPID', '你的appid')
+CONTACTS = os.environ.get('TGHAO_CONTACTS', '138xxxx,139xxxx')
+PUSHPLUS = os.environ.get('PUSHPLUS_TOKEN', '')
+STATE_FILE = 'state.json'
+ORDERS_FILE = 'orders.json'
+
+def load_seen():
+    try:
+        with open(STATE_FILE, 'r') as f:
+            return set(json.load(f).get('ids', []))
+    except:
+        return set()
+
+def save_seen(ids):
+    with open(STATE_FILE, 'w') as f:
+        json.dump({'ids': list(ids)}, f)
+
+def load_orders():
+    try:
+        with open(ORDERS_FILE, 'r') as f:
+            return json.load(f)
+    except:
+        return []
+
+def save_orders(orders):
+    with open(ORDERS_FILE, 'w') as f:
+        json.dump(orders, f, ensure_ascii=False, indent=2)
+
+def query(contact):
+    try:
+        r = requests.get('https://tghao.com/', params={
+            'c': 'api', 'act': 'query_order',
+            'appid': APPID, 'contact': contact
+        }, timeout=15)
+        print(f'[{datetime.now()}] {contact} -> {r.status_code}')
+        j = r.json()
+        if isinstance(j, dict):
+            return j.get('data', [])
+        return []
+    except Exception as e:
+        print(f'query error: {e}')
+        return []
+
+def push(title, content):
+    if not PUSHPLUS:
+        return
+    try:
+        requests.post('https://www.pushplus.plus/send', json={
+            'token': PUSHPLUS, 'title': title,
+            'content': content, 'template': 'txt'
+        })
+    except:
+        pass
+
+seen = load_seen()
+orders = load_orders()
+print(f'loaded {len(seen)} known ids, {len(orders)} orders')
+
+for contact in CONTACTS.split(','):
+    contact = contact.strip()
+    if not contact:
+        continue
+    for o in query(contact):
+        oid = str(o.get('order_id') or o.get('order_sn') or o.get('id', ''))
+        if oid and oid not in seen:
+            seen.add(oid)
+            o['_new'] = True
+            o['_time'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            orders.insert(0, o)
+            msg = f"联系方式: {contact}\n商品: {o.get('goods_name', o.get('product', ''))}\n金额: ¥{o.get('amount', o.get('price', ''))}\n时间: {o.get('_time', '')}"
+            print(f'NEW: {msg}')
+            push('TGHAO 新订单', msg)
+
+save_seen(seen)
+save_orders(orders)
+print('done')
