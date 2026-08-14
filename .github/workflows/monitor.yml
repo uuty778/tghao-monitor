@@ -1,14 +1,30 @@
-name: Monitor
+name: tghao-monitor
 on:
   schedule:
-    - cron: "0 * * * *"
-  push:
-    branches: [ main ]
+    - cron: '*/10 * * * *'
+  workflow_dispatch: {}
 
 jobs:
-  run-monitor:
+  run:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Run Monitor
-        run: python monitor.py
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'  # 明确指定版本，避免冲突
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install --no-cache-dir -r requirements.txt  # 强制刷新缓存
+      - run: python monitor.py
+        env:
+          TGHAO_APPID: ${{ secrets.TGHAO_APPID }}
+          TGHAO_CONTACTS: ${{ secrets.TGHAO_CONTACTS }}
+          PUSHPLUS_TOKEN: ${{ secrets.PUSHPLUS_TOKEN }}
+      - name: save
+        run: |
+          git config user.email "bot@bot.com"
+          git config user.name "monitor-bot"
+          git add state.json
+          git commit -m "update state" || true
+          git push || true
