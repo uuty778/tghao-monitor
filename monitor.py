@@ -2,27 +2,44 @@ import requests
 import json
 import os
 
-# 这里是你之前可能设置过的密钥，如果没设置过可以先留空或者随便填个测试值
-TGHAO_APPID = os.environ.get('TGHAO_APPID', '')
-TGHAO_CONTACTS = os.environ.get('TGHAO_CONTACTS', '')
-PUSHPLUS_TOKEN = os.environ.get('PUSHPLUS_TOKEN', '')
+# 打印一条日志，确认脚本开始运行
+print("="*50)
+print("✅ monitor.py 脚本开始运行！")
+
+# 获取环境变量（如果你之前没设置过，这里会打印 None，但不影响）
+TGHAO_APPID = os.environ.get('TGHAO_APPID', '未设置')
+TGHAO_CONTACTS = os.environ.get('TGHAO_CONTACTS', '未设置')
+PUSHPLUS_TOKEN = os.environ.get('PUSHPLUS_TOKEN', '未设置')
+
+print(f"🔧 环境变量 TGHAO_APPID: {TGHAO_APPID}")
+print(f"🔧 环境变量 TGHAO_CONTACTS: {TGHAO_CONTACTS}")
+print(f"🔧 环境变量 PUSHPLUS_TOKEN: {PUSHPLUS_TOKEN}")
 
 def fetch_orders():
-    # 这里是模拟抓取数据的逻辑，实际你需要替换成你原来的代码
-    # 为了测试，我们先返回一个假数据，确保流程能跑通
+    """模拟抓取订单数据，实际项目中请替换为真实逻辑"""
+    print("📥 正在模拟抓取订单数据...")
     orders = [
-        {"id": "12345", "status": "paid", "amount": 100},
-        {"id": "67890", "status": "shipped", "amount": 200}
+        {"id": "TEST_001", "status": "paid", "amount": 99.99, "time": "2025-09-08"},
+        {"id": "TEST_002", "status": "shipped", "amount": 199.99, "time": "2025-09-07"}
     ]
+    print(f"✅ 成功模拟抓取 {len(orders)} 条订单数据")
     return orders
 
 def save_orders(orders):
+    """保存订单数据到 orders.json"""
+    print("💾 正在保存到 orders.json...")
     with open('orders.json', 'w', encoding='utf-8') as f:
         json.dump(orders, f, ensure_ascii=False, indent=2)
-    print(f"已保存 {len(orders)} 条订单数据到 orders.json")
+    print(f"✅ 已成功保存 {len(orders)} 条数据到 orders.json")
 
 if __name__ == "__main__":
-    print("开始运行监控...")
-    orders = fetch_orders()
-    save_orders(orders)
-    print("监控运行完成！")
+    print("="*50)
+    print("🚀 开始执行监控任务...")
+    try:
+        orders = fetch_orders()
+        save_orders(orders)
+        print("🎉 监控任务执行完毕！")
+    except Exception as e:
+        print(f"❌ 发生错误: {e}")
+        raise  # 抛出错误，让工作流标记为失败
+    print("="*50)
