@@ -11,4 +11,4 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Run Monitor
-        run: echo "Monitor is running..."
+        run: python monitor.py
