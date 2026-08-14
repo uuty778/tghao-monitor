@@ -1,0 +1,45 @@
+name: Run Monitor
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch: # 允许手动运行
+
+jobs:
+  run-monitor:
+    runs-on: ubuntu-latest
+    steps:
+      # 1. 拉取代码
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2. 设置 Python
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      # 3. 安装需要的库
+      - name: Install dependencies
+        run: |
+          pip install requests
+
+      # 4. 运行你的监控脚本
+      - name: Run monitor.py
+        env:
+          # 这里用到了你之前可能设置过的密钥，如果没设置过也没关系，先跑跑看
+          TGHAO_APPID: ${{ secrets.TGHAO_APPID }}
+          TGHAO_CONTACTS: ${{ secrets.TGHAO_CONTACTS }}
+          PUSHPLUS_TOKEN: ${{ secrets.PUSHPLUS_TOKEN }}
+        run: |
+          python monitor.py
+
+      # 5. 把新数据提交回去
+      - name: Commit and push
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+          git add orders.json state.json
+          git commit -m "Update orders" || echo "No changes"
+          git push
